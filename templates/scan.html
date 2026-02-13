@@ -17,6 +17,8 @@
         .result { margin-top: 1rem; padding: 1rem; background: white; border-radius: 8px; }
         .result img { max-width: 150px; float: left; margin-right: 1rem; }
         .result-info { overflow: hidden; }
+        #scanner-container video { width: 100%; height: 100%; object-fit: cover; }
+        #scanner-container canvas { display: none; }
     </style>
 </head>
 <body>
@@ -46,19 +48,50 @@
                 type: "LiveStream",
                 target: document.querySelector('#scanner-container'),
                 constraints: {
-                    facingMode: "environment"
+                    facingMode: "environment",
+                    width: { min: 640, ideal: 1280, max: 1920 },
+                    height: { min: 480, ideal: 720, max: 1080 },
+                    aspectRatio: { min: 1, max: 2 }
                 }
             },
+            locator: {
+                patchSize: "medium",
+                halfSample: true
+            },
+            numOfWorkers: navigator.hardwareConcurrency || 4,
             decoder: {
                 readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"]
-            }
+            },
+            locate: true
         }, function(err) {
             if (err) {
                 console.log(err);
-                document.getElementById('scanner-container').innerHTML = '<p style="color: white; text-align: center; padding: 2rem;">Camera not available. Please enter barcode manually.</p>';
+                document.getElementById('scanner-container').innerHTML = 
+                    '<p style=\"color: white; text-align: center; padding: 2rem;\">Camera not available on this device.<br><br>Please ensure:<br>• HTTPS is enabled (required for camera on iOS)<br>• Camera permissions are allowed<br><br><a href=\"#\" onclick=\"document.getElementById(\'manual-form\').scrollIntoView(); return false;\" style=\"color: #4da6ff;\">Enter barcode manually</a></p>';
                 return;
             }
             Quagga.start();
+        });
+
+        Quagga.onProcessed(function(result) {
+            var drawingCtx = Quagga.canvas.ctx.overlay;
+            var drawingCanvas = Quagga.canvas.dom.overlay;
+            if (result) {
+                if (result.boxes) {
+                    drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+                    result.boxes.filter(function (box) {
+                        return box !== result.box;
+                    }).forEach(function (box) {
+                        Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
+                    });
+                }
+                if (result.box) {
+                    Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "blue", lineWidth: 2});
+                }
+                if (result.codeResult && result.codeResult.code) {
+                    Quagga.ImageDebug.drawPath(result.line, {x: 0, y: 1}, drawingCtx, {color: "red", lineWidth: 3});
+                }
+            }
         });
 
         Quagga.onDetected(function(result) {
