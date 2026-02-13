@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}MusicCat - Collection{% endblock %}
+
+{% block content %}
+<div class="collection-header">
+    <h2>Your CD Collection ({{ cds|length }})</h2>
+    <form method="get" action="/" style="margin: 1rem 0;">
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Search by title or artist..." style="padding: 0.5rem; width: 300px; border: 1px solid #ddd; border-radius: 4px;">
+        <button type="submit" class="btn">Search</button>
+        {% if search_query %}
+        <a href="/" class="btn" style="background: #666;">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+{% if cds %}
+<div class="cd-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+    {% for cd in cds %}
+    <div class="cd-card" style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        {% if cd.cover_url %}
+        <img src="{{ cd.cover_url }}" alt="{{ cd.title }}" style="width: 100%; aspect-ratio: 1; object-fit: cover;">
+        {% else %}
+        <div style="width: 100%; aspect-ratio: 1; background: #ddd; display: flex; align-items: center; justify-content: center; color: #666;">No Cover</div>
+        {% endif %}
+        <div style="padding: 1rem;">
+            <h3 style="font-size: 1rem; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ cd.title }}</h3>
+            <p style="color: #666; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ cd.artist }}</p>
+            {% if cd.year %}
+            <p style="color: #999; font-size: 0.8rem;">{{ cd.year }}</p>
+            {% endif %}
+            <a href="/cd/{{ cd.id }}" style="display: block; margin-top: 0.5rem; color: #1a1a2e;">View Details</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p style="margin-top: 2rem; color: #666;">
+    {% if search_query %}
+    No CDs found matching "{{ search_query }}".
+    {% else %}
+    Your collection is empty. <a href="/scan">Scan a CD</a> to get started!
+    {% endif %}
+</p>
+{% endif %}
+{% endblock %}

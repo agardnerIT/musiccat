@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}{{ cd.title }} - MusicCat{% endblock %}
+
+{% block content %}
+<div class="cd-detail">
+    <a href="/" style="color: #666;">&larr; Back to Collection</a>
+    
+    <div style="display: flex; gap: 2rem; margin-top: 1rem; flex-wrap: wrap;">
+        <div style="flex: 0 0 300px;">
+            {% if cd.cover_url %}
+            <img src="{{ cd.cover_url }}" alt="{{ cd.title }}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+            {% else %}
+            <div style="width: 100%; aspect-ratio: 1; background: #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #666;">No Cover</div>
+            {% endif %}
+        </div>
+        
+        <div style="flex: 1; min-width: 300px;">
+            <h2 style="font-size: 2rem; margin-bottom: 0.5rem;">{{ cd.title }}</h2>
+            <p style="font-size: 1.25rem; color: #666; margin-bottom: 1rem;">{{ cd.artist }}</p>
+            
+            <form action="/cd/{{ cd.id }}/edit" method="post" style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h3 style="margin-bottom: 1rem;">Edit Details</h3>
+                
+                <p style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 0.25rem;">Title</label>
+                    <input type="text" name="title" value="{{ cd.title }}" style="padding: 0.5rem; width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+                </p>
+                
+                <p style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 0.25rem;">Artist</label>
+                    <input type="text" name="artist" value="{{ cd.artist }}" style="padding: 0.5rem; width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+                </p>
+                
+                <p style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 0.25rem;">Year</label>
+                    <input type="number" name="year" value="{{ cd.year or '' }}" style="padding: 0.5rem; width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+                </p>
+                
+                <p style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 0.25rem;">Genre</label>
+                    <input type="text" name="genre" value="{{ cd.genre or '' }}" style="padding: 0.5rem; width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+                </p>
+                
+                <p style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 0.25rem;">Cover URL</label>
+                    <input type="url" name="cover_url" value="{{ cd.cover_url or '' }}" style="padding: 0.5rem; width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+                </p>
+                
+                <p style="margin-bottom: 1rem; color: #666; font-size: 0.9rem;">
+                    <strong>Barcode:</strong> {{ cd.barcode }}<br>
+                    <strong>Added:</strong> {{ cd.added_date.strftime('%Y-%m-%d') if cd.added_date else 'Unknown' }}
+                </p>
+                
+                <button type="submit" class="btn" style="margin-right: 0.5rem;">Save Changes</button>
+            </form>
+            
+            <form action="/cd/{{ cd.id }}/delete" method="post" style="margin-top: 1rem;" onsubmit="return confirm('Are you sure you want to delete this CD?');">
+                <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

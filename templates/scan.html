@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan CD - MusicCat</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
+        header { background: #1a1a2e; color: white; padding: 1rem; }
+        header a { color: #eee; text-decoration: none; }
+        main { max-width: 600px; margin: 0 auto; padding: 1rem; }
+        .btn { display: inline-block; padding: 0.75rem 1.5rem; background: #1a1a2e; color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; font-size: 1rem; }
+        .btn:hover { background: #333; }
+        .result { margin-top: 1rem; padding: 1rem; background: white; border-radius: 8px; }
+        .result img { max-width: 150px; float: left; margin-right: 1rem; }
+        .result-info { overflow: hidden; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/">&larr; Back to Collection</a>
+    </header>
+    <main>
+        <h2>Scan CD Barcode</h2>
+        <p style="color: #666; margin: 1rem 0;">Position the barcode within the camera frame, or enter it manually below.</p>
+        
+        <div id="scanner-container" style="width: 100%; height: 300px; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 1rem;"></div>
+        
+        <form id="manual-form" style="margin: 1rem 0;">
+            <input type="text" id="barcode-input" placeholder="Enter barcode manually..." style="padding: 0.75rem; width: 70%; border: 1px solid #ddd; border-radius: 4px;">
+            <button type="submit" class="btn">Lookup</button>
+        </form>
+
+        <div id="result"></div>
+    </main>
+
+    <script>
+        let lastScanned = null;
+        
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#scanner-container'),
+                constraints: {
+                    facingMode: "environment"
+                }
+            },
+            decoder: {
+                readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"]
+            }
+        }, function(err) {
+            if (err) {
+                console.log(err);
+                document.getElementById('scanner-container').innerHTML = '<p style="color: white; text-align: center; padding: 2rem;">Camera not available. Please enter barcode manually.</p>';
+                return;
+            }
+            Quagga.start();
+        });
+
+        Quagga.onDetected(function(result) {
+            const code = result.codeResult.code;
+            if (code && code !== lastScanned) {
+                lastScanned = code;
+                lookupBarcode(code);
+            }
+        });
+
+        document.getElementById('manual-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const code = document.getElementById('barcode-input').value.trim();
+            if (code) {
+                lookupBarcode(code);
+            }
+        });
+
+        function lookupBarcode(barcode) {
+            fetch(`/api/lookup?barcode=${barcode}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.exists) {
+                        showResult(data.cd, true);
+                    } else {
+                        fetchMusicBrainz(barcode);
+                    }
+                });
+        }
+
+        function fetchMusicBrainz(barcode) {
+            document.getElementById('result').innerHTML = '<p>Looking up barcode...</p>';
+            
+            fetch(`https://musicbrainz.org/ws/2/release/?query=barcode:${barcode}&fmt=json`, {
+                headers: { 'User-Agent': 'MusicCat/1.0 (contact@example.com)' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.releases && data.releases.length > 0) {
+                    const release = data.releases[0];
+                    const cdData = {
+                        barcode: barcode,
+                        title: release.title,
+                        artist: release['artist-credit']?.[0]?.artist?.name || 'Unknown Artist',
+                        year: release.date ? parseInt(release.date.split('-')[0]) : null,
+                        genre: release.genres?.[0]?.name || null,
+                        cover_url: release.images?.[0]?.thumbnails?.small || null
+                    };
+                    showLookupForm(cdData);
+                } else {
+                    showManualEntry(barcode);
+                }
+            })
+            .catch(() => showManualEntry(barcode));
+        }
+
+        function showResult(cd, exists) {
+            document.getElementById('result').innerHTML = `
+                <div class="result">
+                    <h3>${exists ? 'CD Already in Collection' : 'Found!'}</h3>
+                    <p><strong>${cd.title}</strong> by ${cd.artist}</p>
+                    ${exists ? `<a href="/cd/${cd.id}" class="btn">View Details</a>` : ''}
+                </div>
+            `;
+        }
+
+        function showLookupForm(cdData) {
+            document.getElementById('result').innerHTML = `
+                <div class="result">
+                    <h3>Found: ${cdData.title}</h3>
+                    <p>by ${cdData.artist}</p>
+                    <form id="add-form">
+                        <input type="hidden" name="barcode" value="${cdData.barcode}">
+                        <input type="hidden" name="title" value="${cdData.title}">
+                        <input type="hidden" name="artist" value="${cdData.artist}">
+                        <input type="hidden" name="year" value="${cdData.year || ''}">
+                        <input type="hidden" name="genre" value="${cdData.genre || ''}">
+                        <input type="hidden" name="cover_url" value="${cdData.cover_url || ''}">
+                        <button type="submit" class="btn">Add to Collection</button>
+                    </form>
+                </div>
+            `;
+            
+            document.getElementById('add-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                fetch('/api/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(Object.fromEntries(formData))
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = `/cd/${data.cd.id}`;
+                    }
+                });
+            });
+        }
+
+        function showManualEntry(barcode) {
+            document.getElementById('result').innerHTML = `
+                <div class="result">
+                    <h3>CD Not Found</h3>
+                    <form id="manual-add-form">
+                        <input type="hidden" name="barcode" value="${barcode}">
+                        <p><label>Title: <input type="text" name="title" required style="padding: 0.5rem; width: 100%;"></label></p>
+                        <p><label>Artist: <input type="text" name="artist" required style="padding: 0.5rem; width: 100%;"></label></p>
+                        <p><label>Year: <input type="number" name="year" style="padding: 0.5rem; width: 100%;"></label></p>
+                        <p><label>Genre: <input type="text" name="genre" style="padding: 0.5rem; width: 100%;"></label></p>
+                        <p><label>Cover URL: <input type="url" name="cover_url" style="padding: 0.5rem; width: 100%;"></label></p>
+                        <button type="submit" class="btn">Add to Collection</button>
+                    </form>
+                </div>
+            `;
+            
+            document.getElementById('manual-add-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                fetch('/api/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(Object.fromEntries(formData))
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = `/cd/${data.cd.id}`;
+                    } else {
+                        alert(data.error);
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>
