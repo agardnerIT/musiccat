@@ -12,13 +12,22 @@
         header { background: #1a1a2e; color: white; padding: 1rem; }
         header a { color: #eee; text-decoration: none; }
         main { max-width: 600px; margin: 0 auto; padding: 1rem; }
-        .btn { display: inline-block; padding: 0.75rem 1.5rem; background: #1a1a2e; color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; font-size: 1rem; }
+        .btn { display: inline-block; padding: 0.75rem 1.5rem; background: #1a1a2e; color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; font-size: 1rem; width: 100%; margin-bottom: 0.5rem; }
         .btn:hover { background: #333; }
+        .btn-secondary { background: #6c757d; }
+        .btn-secondary:hover { background: #5a6268; }
+        .btn-capture { background: #28a745; font-size: 1.25rem; font-weight: bold; padding: 1rem; }
+        .btn-capture:hover { background: #218838; }
+        .btn-clear { background: #dc3545; }
+        .btn-clear:hover { background: #c82333; }
         .result { margin-top: 1rem; padding: 1rem; background: white; border-radius: 8px; }
-        .result img { max-width: 150px; float: left; margin-right: 1rem; }
-        .result-info { overflow: hidden; }
         #scanner-container video { width: 100%; height: 100%; object-fit: cover; }
         #scanner-container canvas { display: none; }
+        .scanner-status { text-align: center; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.5rem; font-weight: bold; }
+        .status-scanning { background: #fff3cd; color: #856404; }
+        .status-found { background: #d4edda; color: #155724; }
+        .barcode-display { font-size: 1.5rem; font-weight: bold; text-align: center; padding: 1rem; background: #e9ecef; border-radius: 4px; margin-bottom: 1rem; font-family: monospace; }
+        .manual-entry { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ddd; }
     </style>
 </head>
 <body>
@@ -27,20 +36,36 @@
     </header>
     <main>
         <h2>Scan CD Barcode</h2>
-        <p style="color: #666; margin: 1rem 0;">Position the barcode within the camera frame, or enter it manually below.</p>
+        <p style="color: #666; margin: 1rem 0;">Point camera at barcode, then tap "Capture" to look up.</p>
         
         <div id="scanner-container" style="width: 100%; height: 300px; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 1rem;"></div>
         
-        <form id="manual-form" style="margin: 1rem 0;">
-            <input type="text" id="barcode-input" placeholder="Enter barcode manually..." style="padding: 0.75rem; width: 70%; border: 1px solid #ddd; border-radius: 4px;">
-            <button type="submit" class="btn">Lookup</button>
-        </form>
+        <div id="status" class="scanner-status status-scanning">Camera starting...</div>
+        <div id="barcode-display" class="barcode-display">--</div>
+        
+        <button id="capture-btn" class="btn btn-capture" disabled>Capture</button>
+        <button id="clear-btn" class="btn btn-clear" style="display: none;">Clear & Try Again</button>
+        
+        <div class="manual-entry">
+            <p style="color: #666; margin-bottom: 0.5rem;">Or enter barcode manually:</p>
+            <form id="manual-form">
+                <input type="text" id="barcode-input" placeholder="Enter barcode..." style="padding: 0.75rem; width: 65%; border: 1px solid #ddd; border-radius: 4px;">
+                <button type="submit" class="btn" style="width: 33%; margin-bottom: 0;">Lookup</button>
+            </form>
+        </div>
 
         <div id="result"></div>
     </main>
 
     <script>
         let lastScanned = null;
+        let currentBarcode = null;
+        let scannerRunning = false;
+        
+        const captureBtn = document.getElementById('capture-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const barcodeDisplay = document.getElementById('barcode-display');
+        const statusDiv = document.getElementById('status');
         
         Quagga.init({
             inputStream: {
@@ -67,10 +92,15 @@
             if (err) {
                 console.log(err);
                 document.getElementById('scanner-container').innerHTML = 
-                    '<p style=\"color: white; text-align: center; padding: 2rem;\">Camera not available on this device.<br><br>Please ensure:<br>• HTTPS is enabled (required for camera on iOS)<br>• Camera permissions are allowed<br><br><a href=\"#\" onclick=\"document.getElementById(\'manual-form\').scrollIntoView(); return false;\" style=\"color: #4da6ff;\">Enter barcode manually</a></p>';
+                    '<p style="color: white; text-align: center; padding: 2rem;">Camera not available on this device.<br><br>Please ensure:<br>• HTTPS is enabled (required for camera on iOS)<br>• Camera permissions are allowed<br><br><a href="#" onclick="document.getElementById(\'manual-form\').scrollIntoView(); return false;" style="color: #4da6ff;">Enter barcode manually</a></p>';
+                statusDiv.textContent = 'Camera not available';
+                statusDiv.className = 'scanner-status';
                 return;
             }
             Quagga.start();
+            scannerRunning = true;
+            statusDiv.textContent = 'Point camera at barcode';
+            statusDiv.className = 'scanner-status status-scanning';
         });
 
         Quagga.onProcessed(function(result) {
@@ -90,16 +120,31 @@
                 }
                 if (result.codeResult && result.codeResult.code) {
                     Quagga.ImageDebug.drawPath(result.line, {x: 0, y: 1}, drawingCtx, {color: "red", lineWidth: 3});
+                    currentBarcode = result.codeResult.code;
+                    barcodeDisplay.textContent = currentBarcode;
+                    captureBtn.disabled = false;
+                    captureBtn.textContent = 'Capture: ' + currentBarcode;
                 }
             }
         });
 
-        Quagga.onDetected(function(result) {
-            const code = result.codeResult.code;
-            if (code && code !== lastScanned) {
-                lastScanned = code;
-                lookupBarcode(code);
+        captureBtn.addEventListener('click', function() {
+            if (currentBarcode) {
+                lookupBarcode(currentBarcode);
             }
+        });
+
+        clearBtn.addEventListener('click', function() {
+            currentBarcode = null;
+            lastScanned = null;
+            barcodeDisplay.textContent = '--';
+            captureBtn.disabled = true;
+            captureBtn.textContent = 'Capture';
+            captureBtn.className = 'btn btn-capture';
+            clearBtn.style.display = 'none';
+            statusDiv.textContent = 'Point camera at barcode';
+            statusDiv.className = 'scanner-status status-scanning';
+            document.getElementById('result').innerHTML = '';
         });
 
         document.getElementById('manual-form').addEventListener('submit', function(e) {
@@ -111,6 +156,7 @@
         });
 
         function lookupBarcode(barcode) {
+            statusDiv.textContent = 'Looking up...';
             document.getElementById('result').innerHTML = '<p>Looking up barcode...</p>';
             
             fetch(`/api/lookup?barcode=${barcode}`)
@@ -127,6 +173,11 @@
         }
 
         function showResult(cd, exists) {
+            statusDiv.textContent = exists ? 'Already in collection!' : 'Found!';
+            statusDiv.className = 'scanner-status status-found';
+            captureBtn.className = 'btn btn-capture';
+            clearBtn.style.display = 'block';
+            
             document.getElementById('result').innerHTML = `
                 <div class="result">
                     <h3>${exists ? 'CD Already in Collection' : 'Found!'}</h3>
@@ -137,10 +188,17 @@
         }
 
         function showLookupForm(cdData) {
+            statusDiv.textContent = 'Found!';
+            statusDiv.className = 'scanner-status status-found';
+            captureBtn.className = 'btn btn-capture';
+            clearBtn.style.display = 'block';
+            
             document.getElementById('result').innerHTML = `
                 <div class="result">
                     <h3>Found: ${cdData.title}</h3>
                     <p>by ${cdData.artist}</p>
+                    ${cdData.year ? `<p>Year: ${cdData.year}</p>` : ''}
+                    ${cdData.genre ? `<p>Genre: ${cdData.genre}</p>` : ''}
                     <form id="add-form">
                         <input type="hidden" name="barcode" value="${cdData.barcode}">
                         <input type="hidden" name="title" value="${cdData.title}">
@@ -171,6 +229,10 @@
         }
 
         function showManualEntry(barcode) {
+            statusDiv.textContent = 'Not found';
+            statusDiv.className = 'scanner-status';
+            clearBtn.style.display = 'block';
+            
             document.getElementById('result').innerHTML = `
                 <div class="result">
                     <h3>CD Not Found</h3>
