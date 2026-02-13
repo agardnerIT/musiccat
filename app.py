@@ -1,5 +1,6 @@
 from flask import Flask, render_template, jsonify, request, redirect, url_for
 from models import db, CD
+from api_client import lookup_barcode
 import os
 
 app = Flask(__name__)
@@ -64,7 +65,11 @@ def api_lookup():
     if existing:
         return jsonify({"exists": True, "cd": existing.to_dict()})
 
-    return jsonify({"exists": False})
+    mb_data = lookup_barcode(barcode)
+    if mb_data:
+        return jsonify({"exists": False, "mb_data": mb_data})
+
+    return jsonify({"exists": False, "mb_data": None})
 
 
 @app.route("/api/add", methods=["POST"])

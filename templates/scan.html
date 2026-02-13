@@ -78,41 +78,19 @@
         });
 
         function lookupBarcode(barcode) {
+            document.getElementById('result').innerHTML = '<p>Looking up barcode...</p>';
+            
             fetch(`/api/lookup?barcode=${barcode}`)
                 .then(r => r.json())
                 .then(data => {
                     if (data.exists) {
                         showResult(data.cd, true);
+                    } else if (data.mb_data) {
+                        showLookupForm(data.mb_data);
                     } else {
-                        fetchMusicBrainz(barcode);
+                        showManualEntry(barcode);
                     }
                 });
-        }
-
-        function fetchMusicBrainz(barcode) {
-            document.getElementById('result').innerHTML = '<p>Looking up barcode...</p>';
-            
-            fetch(`https://musicbrainz.org/ws/2/release/?query=barcode:${barcode}&fmt=json`, {
-                headers: { 'User-Agent': 'MusicCat/1.0 (contact@example.com)' }
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.releases && data.releases.length > 0) {
-                    const release = data.releases[0];
-                    const cdData = {
-                        barcode: barcode,
-                        title: release.title,
-                        artist: release['artist-credit']?.[0]?.artist?.name || 'Unknown Artist',
-                        year: release.date ? parseInt(release.date.split('-')[0]) : null,
-                        genre: release.genres?.[0]?.name || null,
-                        cover_url: release.images?.[0]?.thumbnails?.small || null
-                    };
-                    showLookupForm(cdData);
-                } else {
-                    showManualEntry(barcode);
-                }
-            })
-            .catch(() => showManualEntry(barcode));
         }
 
         function showResult(cd, exists) {
