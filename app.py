@@ -85,6 +85,8 @@ def api_lookup():
 def api_add():
     data = request.json
     barcode = data.get("barcode")
+    print(f"DEBUG api_add: received data keys = {data.keys()}")
+    print(f"DEBUG api_add: tracks = {data.get('tracks')}")
 
     existing = CD.query.filter_by(barcode=barcode).first()
     if existing:
