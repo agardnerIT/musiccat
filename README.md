@@ -63,6 +63,30 @@ This creates `<filename>.pem` and `<filename>-key.pem` files.
 python app.py
 ```
 
+## Docker
+
+### Build and Run with Docker Compose
+
+```bash
+docker-compose up --build
+```
+
+### Build and Run Manually
+
+```bash
+# Build the image
+docker build -t musiccat .
+
+# Run the container
+docker run -p 6123:6123 -v $(pwd)/musiccat.db:/app/musiccat.db -v $(pwd)/cert.pem:/app/cert.pem:ro -v $(pwd)/key.pem:/app/key.pem:ro musiccat
+```
+
+### Notes
+
+- The database is persisted via volume mount to `musiccat.db`
+- SSL certificates (`cert.pem`, `key.pem`) are mounted read-only
+- For iOS camera access, you'll need valid SSL certificates
+
 ## Usage
 
 ### Access the App
@@ -94,13 +118,14 @@ musiccat/
 ├── models.py           # Database models
 ├── api_client.py       # MusicBrainz API client
 ├── requirements.txt    # Python dependencies
+├── Dockerfile          # Docker image definition
+├── docker-compose.yml  # Docker Compose configuration
 ├── templates/          # HTML templates
 │   ├── base.html
 │   ├── index.html
 │   ├── scan.html
 │   ├── cd_detail.html
-│   ├── duplicates.html
-│   └── tracks.html
+│   └── duplicates.html
 └── musiccat.db         # SQLite database (created on first run)
 ```
 
@@ -110,7 +135,6 @@ musiccat/
 - `GET /scan` - Barcode scanner
 - `GET /cd/<id>` - CD details
 - `GET /duplicates` - Find duplicates
-- `GET /tracks?q=<query>` - Search tracks
 - `GET /api/lookup?barcode=<barcode>` - Lookup barcode
 - `POST /api/add` - Add CD to collection
 
