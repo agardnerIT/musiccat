@@ -32,23 +32,30 @@ def _get_cover_url(release_id: str) -> Optional[str]:
 def _get_tracks(release_id: str) -> List[Dict[str, Any]]:
     try:
         url = f"{MUSIC_BRAINZ_URL}{release_id}"
-        params = {"inc": "tracks", "fmt": "json"}
+        params = {"inc": "recordings", "fmt": "json"}
         headers = {"User-Agent": USER_AGENT}
         response = requests.get(url, params=params, headers=headers, timeout=10)
         response.raise_for_status()
         data = response.json()
 
         tracks = []
-        for track in data.get("tracks", []):
-            duration_ms = track.get("length")
-            duration_sec = duration_ms // 1000 if duration_ms else None
-            tracks.append(
-                {
-                    "track_number": track.get("number"),
-                    "title": track.get("title"),
-                    "duration": duration_sec,
-                }
-            )
+        for media in data.get("media", []):
+            recordings = media.get("recordings", [])
+            for i, recording in enumerate(recordings):
+                track_position = (
+                    media.get("track", [])[i].get("position")
+                    if i < len(media.get("track", []))
+                    else None
+                )
+                duration_ms = recording.get("length")
+                duration_sec = duration_ms // 1000 if duration_ms else None
+                tracks.append(
+                    {
+                        "track_number": track_position,
+                        "title": recording.get("title"),
+                        "duration": duration_sec,
+                    }
+                )
         return tracks
     except requests.RequestException:
         return []
