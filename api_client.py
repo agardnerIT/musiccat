@@ -21,7 +21,7 @@ def _rate_limit():
 def _get_cover_url(release_id: str) -> Optional[str]:
     try:
         url = COVER_ART_ARCHIVE_URL.format(release_id=release_id)
-        response = requests.head(url, allow_redirects=True, timeout=10)
+        response = requests.get(url, allow_redirects=True, timeout=10, stream=True)
         if response.status_code == 200:
             return response.url
         return None
