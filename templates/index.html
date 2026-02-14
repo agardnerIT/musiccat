@@ -19,11 +19,13 @@
 <div class="cd-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
     {% for cd in cds %}
     <div class="cd-card" style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <a href="/cd/{{ cd.id }}">
         {% if cd.cover_url %}
         <img src="{{ cd.cover_url }}" alt="{{ cd.title }}" style="width: 100%; aspect-ratio: 1; object-fit: cover;">
         {% else %}
         <div style="width: 100%; aspect-ratio: 1; background: #ddd; display: flex; align-items: center; justify-content: center; color: #666;">No Cover</div>
         {% endif %}
+        </a>
         <div style="padding: 1rem;">
             <h3 style="font-size: 1rem; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ cd.title }}</h3>
             <p style="color: #666; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ cd.artist }}</p>
