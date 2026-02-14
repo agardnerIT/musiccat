@@ -40,19 +40,13 @@ def _get_tracks(release_id: str) -> List[Dict[str, Any]]:
 
         tracks = []
         for media in data.get("media", []):
-            recordings = media.get("recordings", [])
-            for i, recording in enumerate(recordings):
-                track_position = (
-                    media.get("track", [])[i].get("position")
-                    if i < len(media.get("track", []))
-                    else None
-                )
-                duration_ms = recording.get("length")
+            for track in media.get("tracks", []):
+                duration_ms = track.get("length")
                 duration_sec = duration_ms // 1000 if duration_ms else None
                 tracks.append(
                     {
-                        "track_number": track_position,
-                        "title": recording.get("title"),
+                        "track_number": track.get("position"),
+                        "title": track.get("title"),
                         "duration": duration_sec,
                     }
                 )
