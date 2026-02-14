@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Duplicates - MusicCat{% endblock %}
+
+{% block content %}
+<h2>Find Duplicates</h2>
+
+{% if not barcode_duplicates and not title_artist_duplicates %}
+<p style="margin-top: 1rem; color: #28a745;">No duplicates found! Your collection is clean.</p>
+{% else %}
+
+{% if barcode_duplicates %}
+<h3 style="margin-top: 2rem;">Exact Duplicates (same barcode)</h3>
+{% for barcode, cds in barcode_duplicates.items() %}
+<div class="duplicate-group" style="background: white; padding: 1rem; margin: 1rem 0; border-radius: 8px; border-left: 4px solid #dc3545;">
+    <p><strong>Barcode:</strong> {{ barcode }}</p>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem;">
+        {% for cd in cds %}
+        <div style="flex: 1; min-width: 200px; border: 1px solid #ddd; padding: 0.5rem; border-radius: 4px;">
+            <p><strong>{{ cd.title }}</strong></p>
+            <p>{{ cd.artist }}</p>
+            <a href="/cd/{{ cd.id }}" style="color: #1a1a2e;">View</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if title_artist_duplicates %}
+<h3 style="margin-top: 2rem;">Similar (same title + artist)</h3>
+{% for key, cds in title_artist_duplicates.items() %}
+<div class="duplicate-group" style="background: white; padding: 1rem; margin: 1rem 0; border-radius: 8px; border-left: 4px solid #ffc107;">
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        {% for cd in cds %}
+        <div style="flex: 1; min-width: 200px; border: 1px solid #ddd; padding: 0.5rem; border-radius: 4px;">
+            <p><strong>{{ cd.title }}</strong></p>
+            <p>{{ cd.artist }}</p>
+            {% if cd.year %}<p>Year: {{ cd.year }}</p>{% endif %}
+            <p><small>Barcode: {{ cd.barcode }}</small></p>
+            <a href="/cd/{{ cd.id }}" style="color: #1a1a2e;">View</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% endif %}
+
+<a href="/" class="btn" style="margin-top: 2rem; display: inline-block;">Back to Collection</a>
+{% endblock %}

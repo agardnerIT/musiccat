@@ -223,7 +223,14 @@
                 .then(data => {
                     if (data.success) {
                         window.location.href = `/cd/${data.cd.id}`;
+                    } else if (data.exists && data.cd) {
+                        showResult(data.cd, true);
+                    } else {
+                        alert(data.error || 'Failed to add CD');
                     }
+                })
+                .catch(err => {
+                    alert('Failed to add CD');
                 });
             });
         }

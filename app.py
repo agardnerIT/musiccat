@@ -79,7 +79,13 @@ def api_add():
 
     existing = CD.query.filter_by(barcode=barcode).first()
     if existing:
-        return jsonify({"error": "CD already in collection"}), 400
+        return jsonify(
+            {
+                "error": "CD already in collection",
+                "exists": True,
+                "cd": existing.to_dict(),
+            }
+        ), 400
 
     cd = CD(
         barcode=barcode,
@@ -95,7 +101,64 @@ def api_add():
     return jsonify({"success": True, "cd": cd.to_dict()})
 
 
+@app.route("/api/duplicates", methods=["GET"])
+def api_duplicates():
+    all_cds = CD.query.all()
+
+    barcode_dups = {}
+    title_artist_dups = {}
+
+    for cd in all_cds:
+        if cd.barcode:
+            if cd.barcode not in barcode_dups:
+                barcode_dups[cd.barcode] = []
+            barcode_dups[cd.barcode].append(cd.to_dict())
+
+        key = f"{cd.title}|{cd.artist}".lower()
+        if key not in title_artist_dups:
+            title_artist_dups[key] = []
+        title_artist_dups[key].append(cd.to_dict())
+
+    barcode_duplicates = {k: v for k, v in barcode_dups.items() if len(v) > 1}
+    title_artist_duplicates = {k: v for k, v in title_artist_dups.items() if len(v) > 1}
+
+    return jsonify(
+        {
+            "barcode_duplicates": barcode_duplicates,
+            "title_artist_duplicates": title_artist_duplicates,
+        }
+    )
+
+
+@app.route("/duplicates")
+def duplicates():
+    all_cds = CD.query.all()
+
+    barcode_dups = {}
+    title_artist_dups = {}
+
+    for cd in all_cds:
+        if cd.barcode:
+            if cd.barcode not in barcode_dups:
+                barcode_dups[cd.barcode] = []
+            barcode_dups[cd.barcode].append(cd)
+
+        key = f"{cd.title}|{cd.artist}".lower()
+        if key not in title_artist_dups:
+            title_artist_dups[key] = []
+        title_artist_dups[key].append(cd)
+
+    barcode_duplicates = {k: v for k, v in barcode_dups.items() if len(v) > 1}
+    title_artist_duplicates = {k: v for k, v in title_artist_dups.items() if len(v) > 1}
+
+    return render_template(
+        "duplicates.html",
+        barcode_duplicates=barcode_duplicates,
+        title_artist_duplicates=title_artist_duplicates,
+    )
+
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(debug=True, host="0.0.0.0", port=6123)
+    app.run(debug=True, host="0.0.0.0", port=6123, ssl_context=("cert.pem", "key.pem"))
