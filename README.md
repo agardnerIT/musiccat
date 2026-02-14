@@ -22,17 +22,17 @@ A CD catalog application that lets you scan barcodes using your phone camera and
 ### 1. Create Virtual Environment
 
 ```bash
-python -m venv venv
+python -m venv .
 ```
 
 ### 2. Activate Virtual Environment
 
 ```bash
 # Mac/Linux
-source venv/bin/activate
+source bin/activate
 
 # Windows
-venv\Scripts\activate
+Scripts\activate
 ```
 
 ### 3. Install Dependencies
