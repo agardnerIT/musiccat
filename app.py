@@ -109,15 +109,18 @@ def api_add():
 
     tracks_raw = data.get("tracks")
     tracks_data = []
+    print(f"DEBUG: tracks_raw = {tracks_raw}, type = {type(tracks_raw)}")
     if tracks_raw:
         if isinstance(tracks_raw, str):
             try:
                 tracks_data = json.loads(tracks_raw)
+                print(f"DEBUG: parsed tracks_data = {tracks_data}")
             except json.JSONDecodeError:
                 tracks_data = []
         elif isinstance(tracks_raw, list):
             tracks_data = tracks_raw
 
+    print(f"DEBUG: saving {len(tracks_data)} tracks")
     for track_data in tracks_data:
         track = Track(
             cd_id=cd.id,
