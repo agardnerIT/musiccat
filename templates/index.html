@@ -6,7 +6,7 @@
 <div class="collection-header">
     <h2>Your CD Collection ({{ cds|length }})</h2>
     <form method="get" action="/" style="margin: 1rem 0;">
-        <input type="text" name="q" value="{{ search_query }}" placeholder="Search by title or artist..." style="padding: 0.5rem; width: 300px; border: 1px solid #ddd; border-radius: 4px;">
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Search albums or tracks..." style="padding: 0.5rem; width: 300px; border: 1px solid #ddd; border-radius: 4px;">
         <button type="submit" class="btn">Search</button>
         {% if search_query %}
         <a href="/" class="btn" style="background: #666;">Clear</a>
@@ -15,7 +15,8 @@
 </div>
 
 {% if cds %}
-<div class="cd-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+<h3 style="margin-top: 1rem;">Albums</h3>
+<div class="cd-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
     {% for cd in cds %}
     <div class="cd-card" style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
         {% if cd.cover_url %}
@@ -34,13 +35,25 @@
     </div>
     {% endfor %}
 </div>
+{% elif search_query %}
+<p style="margin-top: 2rem; color: #666;">
+    No albums found matching "{{ search_query }}".
+</p>
 {% else %}
 <p style="margin-top: 2rem; color: #666;">
-    {% if search_query %}
-    No CDs found matching "{{ search_query }}".
-    {% else %}
     Your collection is empty. <a href="/scan">Scan a CD</a> to get started!
-    {% endif %}
 </p>
+{% endif %}
+
+{% if matching_tracks %}
+<h3 style="margin-top: 2rem;">Tracks</h3>
+<div style="background: white; border-radius: 8px; padding: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    {% for track in matching_tracks %}
+    <div style="padding: 0.75rem 0; border-bottom: 1px solid #eee;">
+        <p style="font-weight: bold;">{{ track.title }}</p>
+        <p style="color: #666; font-size: 0.9rem;">from <a href="/cd/{{ track.cd_id }}">{{ track.cd.title }}</a> by {{ track.cd.artist }}</p>
+    </div>
+    {% endfor %}
+</div>
 {% endif %}
 {% endblock %}

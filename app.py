@@ -21,9 +21,16 @@ def index():
             (CD.title.ilike(f"%{search_query}%"))
             | (CD.artist.ilike(f"%{search_query}%"))
         ).all()
+        matching_tracks = Track.query.filter(Track.title.ilike(search_query)).all()
     else:
         cds = CD.query.all()
-    return render_template("index.html", cds=cds, search_query=search_query)
+        matching_tracks = []
+    return render_template(
+        "index.html",
+        cds=cds,
+        matching_tracks=matching_tracks,
+        search_query=search_query,
+    )
 
 
 @app.route("/scan")
