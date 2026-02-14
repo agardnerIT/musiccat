@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Create database file if it doesn't exist
-if [ ! -f musiccat.db ]; then
-    touch musiccat.db
+if [ ! -f /app/musiccat.db ]; then
+    touch /app/musiccat.db
 fi
 
 # Run the Flask app
