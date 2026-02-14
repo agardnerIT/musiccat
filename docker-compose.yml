@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  musiccat:
+    build: .
+    ports:
+      - "6123:6123"
+    volumes:
+      - ./musiccat.db:/app/musiccat.db
+      - ./cert.pem:/app/cert.pem:ro
+      - ./key.pem:/app/key.pem:ro
+    restart: unless-stopped

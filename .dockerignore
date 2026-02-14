@@ -1,0 +1,16 @@
+__pycache__
+*.pyc
+*.pyo
+*.db
+.env
+venv/
+.env
+*.egg-info/
+dist/
+build/
+.git
+.gitignore
+*.md
+musiccat.db
+cert.pem
+key.pem
