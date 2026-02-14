@@ -12,6 +12,16 @@ A CD catalog application that lets you scan barcodes using your phone camera and
 - Duplicate detection
 - SQLite database - no external dependencies
 
+## Docker
+
+### Build and Run with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+Access the app on port `6123`
+
 ## Prerequisites
 
 - Python 3.x
@@ -61,14 +71,6 @@ This creates `<filename>.pem` and `<filename>-key.pem` files.
 
 ```bash
 python app.py
-```
-
-## Docker
-
-### Build and Run with Docker Compose
-
-```bash
-docker-compose up --build
 ```
 
 ### Build and Run Manually
