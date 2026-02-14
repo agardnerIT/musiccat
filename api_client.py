@@ -3,6 +3,7 @@ import requests
 from typing import Optional, Dict, Any
 
 MUSIC_BRAINZ_URL = "https://musicbrainz.org/ws/2/release/"
+COVER_ART_ARCHIVE_URL = "https://coverartarchive.org/release/{release_id}/front"
 USER_AGENT = "MusicCat/1.0 (https://github.com/agardnerIT/musiccat)"
 RATE_LIMIT_DELAY = 1.1
 
@@ -15,6 +16,17 @@ def _rate_limit():
     if elapsed < RATE_LIMIT_DELAY:
         time.sleep(RATE_LIMIT_DELAY - elapsed)
     _last_request_time = time.time()
+
+
+def _get_cover_url(release_id: str) -> Optional[str]:
+    try:
+        url = COVER_ART_ARCHIVE_URL.format(release_id=release_id)
+        response = requests.head(url, allow_redirects=True, timeout=10)
+        if response.status_code == 200:
+            return response.url
+        return None
+    except requests.RequestException:
+        return None
 
 
 def lookup_barcode(barcode: str) -> Optional[Dict[str, Any]]:
@@ -34,6 +46,7 @@ def lookup_barcode(barcode: str) -> Optional[Dict[str, Any]]:
             return None
 
         release = data["releases"][0]
+        release_id = release.get("id")
 
         artist_name = "Unknown Artist"
         if release.get("artist-credit"):
@@ -51,11 +64,8 @@ def lookup_barcode(barcode: str) -> Optional[Dict[str, Any]]:
             genre = release["genres"][0]["name"]
 
         cover_url = None
-        if release.get("images"):
-            for img in release["images"]:
-                if img.get("thumbnails", {}).get("small"):
-                    cover_url = img["thumbnails"]["small"]
-                    break
+        if release_id:
+            cover_url = _get_cover_url(release_id)
 
         return {
             "barcode": barcode,
