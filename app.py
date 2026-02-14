@@ -189,35 +189,6 @@ def duplicates():
     )
 
 
-@app.route("/api/search-tracks")
-def api_search_tracks():
-    query = request.args.get("q", "").strip()
-    if not query:
-        return jsonify({"results": []})
-
-    tracks = Track.query.filter(Track.title.ilike(f"%{query}%")).all()
-
-    results = []
-    for track in tracks:
-        cd = track.cd
-        results.append({"track": track.to_dict(), "cd": cd.to_dict()})
-
-    return jsonify({"results": results})
-
-
-@app.route("/tracks")
-def tracks_search():
-    query = request.args.get("q", "")
-    results = []
-
-    if query:
-        tracks = Track.query.filter(Track.title.ilike(f"%{query}%")).all()
-        for track in tracks:
-            results.append({"track": track, "cd": track.cd})
-
-    return render_template("tracks.html", results=results, query=query)
-
-
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
