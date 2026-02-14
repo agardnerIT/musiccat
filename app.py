@@ -1,4 +1,5 @@
 import json
+from urllib.parse import unquote
 
 from flask import Flask, render_template, jsonify, request, redirect, url_for
 from models import db, CD, Track
@@ -85,8 +86,6 @@ def api_lookup():
 def api_add():
     data = request.json
     barcode = data.get("barcode")
-    print(f"DEBUG api_add: received data keys = {data.keys()}")
-    print(f"DEBUG api_add: tracks = {data.get('tracks')}")
 
     existing = CD.query.filter_by(barcode=barcode).first()
     if existing:
@@ -114,11 +113,14 @@ def api_add():
     if tracks_raw:
         if isinstance(tracks_raw, str):
             try:
+                tracks_raw = unquote(tracks_raw)
                 tracks_data = json.loads(tracks_raw)
             except json.JSONDecodeError:
                 tracks_data = []
         elif isinstance(tracks_raw, list):
             tracks_data = tracks_raw
+
+    print(f"DEBUG: saving {len(tracks_data)} tracks")
 
     for track_data in tracks_data:
         track = Track(
