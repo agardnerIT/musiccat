@@ -193,12 +193,15 @@
             captureBtn.className = 'btn btn-capture';
             clearBtn.style.display = 'block';
             
+            const tracksJson = encodeURIComponent(JSON.stringify(cdData.tracks || []));
+            
             document.getElementById('result').innerHTML = `
                 <div class="result">
                     <h3>Found: ${cdData.title}</h3>
                     <p>by ${cdData.artist}</p>
                     ${cdData.year ? `<p>Year: ${cdData.year}</p>` : ''}
                     ${cdData.genre ? `<p>Genre: ${cdData.genre}</p>` : ''}
+                    ${cdData.tracks && cdData.tracks.length ? `<p>Tracks: ${cdData.tracks.length}</p>` : ''}
                     <form id="add-form">
                         <input type="hidden" name="barcode" value="${cdData.barcode}">
                         <input type="hidden" name="title" value="${cdData.title}">
@@ -206,6 +209,7 @@
                         <input type="hidden" name="year" value="${cdData.year || ''}">
                         <input type="hidden" name="genre" value="${cdData.genre || ''}">
                         <input type="hidden" name="cover_url" value="${cdData.cover_url || ''}">
+                        <input type="hidden" name="tracks" value="${tracksJson}">
                         <button type="submit" class="btn">Add to Collection</button>
                     </form>
                 </div>

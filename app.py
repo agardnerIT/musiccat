@@ -1,5 +1,7 @@
+import json
+
 from flask import Flask, render_template, jsonify, request, redirect, url_for
-from models import db, CD
+from models import db, CD, Track
 from api_client import lookup_barcode
 import os
 
@@ -83,7 +85,7 @@ def api_add():
             {
                 "error": "CD already in collection",
                 "exists": True,
-                "cd": existing.to_dict(),
+                "cd": existing.to_dict(include_tracks=True),
             }
         ), 400
 
@@ -96,9 +98,31 @@ def api_add():
         cover_url=data.get("cover_url"),
     )
     db.session.add(cd)
+    db.session.flush()
+
+    tracks_raw = data.get("tracks")
+    tracks_data = []
+    if tracks_raw:
+        if isinstance(tracks_raw, str):
+            try:
+                tracks_data = json.loads(tracks_raw)
+            except json.JSONDecodeError:
+                tracks_data = []
+        elif isinstance(tracks_raw, list):
+            tracks_data = tracks_raw
+
+    for track_data in tracks_data:
+        track = Track(
+            cd_id=cd.id,
+            track_number=track_data.get("track_number"),
+            title=track_data.get("title"),
+            duration=track_data.get("duration"),
+        )
+        db.session.add(track)
+
     db.session.commit()
 
-    return jsonify({"success": True, "cd": cd.to_dict()})
+    return jsonify({"success": True, "cd": cd.to_dict(include_tracks=True)})
 
 
 @app.route("/api/duplicates", methods=["GET"])
@@ -156,6 +180,35 @@ def duplicates():
         barcode_duplicates=barcode_duplicates,
         title_artist_duplicates=title_artist_duplicates,
     )
+
+
+@app.route("/api/search-tracks")
+def api_search_tracks():
+    query = request.args.get("q", "").strip()
+    if not query:
+        return jsonify({"results": []})
+
+    tracks = Track.query.filter(Track.title.ilike(f"%{query}%")).all()
+
+    results = []
+    for track in tracks:
+        cd = track.cd
+        results.append({"track": track.to_dict(), "cd": cd.to_dict()})
+
+    return jsonify({"results": results})
+
+
+@app.route("/tracks")
+def tracks_search():
+    query = request.args.get("q", "")
+    results = []
+
+    if query:
+        tracks = Track.query.filter(Track.title.ilike(f"%{query}%")).all()
+        for track in tracks:
+            results.append({"track": track, "cd": track.cd})
+
+    return render_template("tracks.html", results=results, query=query)
 
 
 if __name__ == "__main__":

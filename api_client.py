@@ -1,6 +1,6 @@
 import time
 import requests
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 MUSIC_BRAINZ_URL = "https://musicbrainz.org/ws/2/release/"
 COVER_ART_ARCHIVE_URL = "https://coverartarchive.org/release/{release_id}/front"
@@ -27,6 +27,31 @@ def _get_cover_url(release_id: str) -> Optional[str]:
         return None
     except requests.RequestException:
         return None
+
+
+def _get_tracks(release_id: str) -> List[Dict[str, Any]]:
+    try:
+        url = f"{MUSIC_BRAINZ_URL}{release_id}"
+        params = {"inc": "tracks", "fmt": "json"}
+        headers = {"User-Agent": USER_AGENT}
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        tracks = []
+        for track in data.get("tracks", []):
+            duration_ms = track.get("length")
+            duration_sec = duration_ms // 1000 if duration_ms else None
+            tracks.append(
+                {
+                    "track_number": track.get("number"),
+                    "title": track.get("title"),
+                    "duration": duration_sec,
+                }
+            )
+        return tracks
+    except requests.RequestException:
+        return []
 
 
 def lookup_barcode(barcode: str) -> Optional[Dict[str, Any]]:
@@ -66,6 +91,9 @@ def lookup_barcode(barcode: str) -> Optional[Dict[str, Any]]:
         cover_url = None
         if release_id:
             cover_url = _get_cover_url(release_id)
+            tracks = _get_tracks(release_id)
+        else:
+            tracks = []
 
         return {
             "barcode": barcode,
@@ -74,6 +102,7 @@ def lookup_barcode(barcode: str) -> Optional[Dict[str, Any]]:
             "year": year,
             "genre": genre,
             "cover_url": cover_url,
+            "tracks": tracks,
         }
 
     except requests.RequestException:

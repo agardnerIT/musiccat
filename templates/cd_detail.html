@@ -58,6 +58,22 @@
             <form action="/cd/{{ cd.id }}/delete" method="post" style="margin-top: 1rem;" onsubmit="return confirm('Are you sure you want to delete this CD?');">
                 <button type="submit" class="btn btn-danger">Delete</button>
             </form>
+            
+            {% if cd.tracks %}
+            <div style="margin-top: 2rem; background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h3 style="margin-bottom: 1rem;">Tracks</h3>
+                <ol style="padding-left: 1.5rem;">
+                    {% for track in cd.tracks %}
+                    <li style="margin-bottom: 0.5rem;">
+                        {{ track.title }}
+                        {% if track.duration %}
+                        <span style="color: #666;">({{ (track.duration // 60) }}:{{ "%02d"|format(track.duration % 60) }})</span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ol>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
